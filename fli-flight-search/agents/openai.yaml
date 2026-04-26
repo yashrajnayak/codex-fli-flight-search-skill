@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fli Flight Search"
+  short_description: "Search and compare flights with fli."
+  default_prompt: "Use fli to search and compare flights for the route, dates, baggage, stops, airports, and cabin I specify."
