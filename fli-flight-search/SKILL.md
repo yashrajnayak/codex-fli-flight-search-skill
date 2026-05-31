@@ -18,7 +18,8 @@ Use `fli` for fast, repeatable, machine-readable Google Flights exploration. Tre
    - Checked bag: `--bags 1` or `--bags 2`
    - Carry-on: `--carry-on`
    - Nonstop: `--stops NON_STOP`
-   - Cabin: `--class ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, or `FIRST`
+   - Cabin in raw `fli`: `--class ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, or `FIRST`
+   - Cabin in the helper script: `--cabin ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, or `FIRST`
    - Departure window: `--time 6-12`
    - Airlines: `--airlines AA DL AC`
 3. Use JSON output for comparisons:
@@ -40,11 +41,15 @@ python ~/.codex/skills/fli-flight-search/scripts/fli_search.py \
   --origin LGA --destination YYZ --date 2026-05-10 --bags 1 --limit 8
 ```
 
-Set `FLI_REPO=/path/to/fli` if the script cannot locate the checkout. On this machine, the known working checkout is:
+Set `FLI_REPO=/path/to/fli` or pass `--fli-repo /path/to/fli` if the script cannot locate the checkout. The helper searches the current directory, parent directories, `~/src/fli`, and `~/fli`.
 
-```text
-~/src/fli
+```bash
+python ~/.codex/skills/fli-flight-search/scripts/fli_search.py \
+  --fli-repo "/path/to/fli" \
+  --origin LGA --destination YYZ --date 2026-05-10 --bags 1 --limit 8
 ```
+
+Real searches require network access to Google Flights. In Codex sandboxes, retry with approval if DNS or network access fails. The helper prints concise errors by default; use `--debug` to show the full `fli` output and traceback.
 
 ## Setup Notes
 

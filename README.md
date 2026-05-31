@@ -20,6 +20,14 @@ mkdir -p ~/.codex/skills
 cp -R codex-fli-flight-search-skill/fli-flight-search ~/.codex/skills/
 ```
 
+Or install with Codex's skill installer by pointing at the nested skill path:
+
+```bash
+python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo yashrajnayak/codex-fli-flight-search-skill \
+  --path fli-flight-search
+```
+
 Restart Codex after installing the skill.
 
 ## Set Up Fli
@@ -45,6 +53,8 @@ If you use a local checkout, set:
 export FLI_REPO=~/src/fli
 ```
 
+You can also pass the checkout path per command with `--fli-repo /path/to/fli`.
+
 ## Example
 
 Ask Codex:
@@ -60,6 +70,16 @@ python ~/.codex/skills/fli-flight-search/scripts/fli_search.py \
   --origin LGA --destination YYZ --date 2026-05-10 --bags 1 --limit 8
 ```
 
+For a local checkout outside the default search paths:
+
+```bash
+python ~/.codex/skills/fli-flight-search/scripts/fli_search.py \
+  --fli-repo "/path/to/fli" \
+  --origin LGA --destination YYZ --date 2026-05-10 --bags 1 --limit 8
+```
+
 ## Notes
 
 `fli` results are best used for exploration. Always verify final fares, baggage rules, fare class, and booking details on Google Flights or the airline site before purchasing.
+
+Real searches require network access to Google Flights. In sandboxed Codex sessions, rerun with approval if DNS or network access is blocked. The helper prints concise failures by default; add `--debug` when you need the full `fli` traceback.

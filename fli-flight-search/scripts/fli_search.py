@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -33,8 +34,16 @@ def find_repo() -> Path | None:
     return None
 
 
+def validate_repo(path: Path) -> Path:
+    repo = path.expanduser().resolve()
+    if not (repo / "fli" / "cli" / "main.py").exists():
+        raise SystemExit(f"{repo} does not look like a fli checkout.")
+    return repo
+
+
 def build_base_command(repo: Path | None) -> tuple[list[str], dict[str, str]]:
     env = os.environ.copy()
+    env.setdefault("FLI_HOME", str(Path(tempfile.gettempdir()) / "fli"))
     if repo:
         python = repo / ".venv" / "bin" / "python"
         if not python.exists():
@@ -91,6 +100,29 @@ def summarize(data: dict, limit: int) -> str:
     return "\n".join(lines)
 
 
+def concise_error(output: str) -> str:
+    markers = [
+        "SearchConnectionError:",
+        "SearchTimeoutError:",
+        "SearchClientError:",
+        "DNSError:",
+        "PermissionError:",
+        "Could not find fli.",
+    ]
+    lines = output.splitlines()
+    for marker in markers:
+        for index in range(len(lines) - 1, -1, -1):
+            if marker in lines[index]:
+                message = [lines[index].strip()]
+                for next_line in lines[index + 1 : index + 3]:
+                    text = next_line.strip()
+                    if text and not text.startswith(("╭", "│", "╰")):
+                        message.append(text)
+                return " ".join(message)
+    tail = [line.strip() for line in lines if line.strip()]
+    return tail[-1] if tail else "fli search failed without output."
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--origin", required=True)
@@ -107,9 +139,11 @@ def main() -> int:
     parser.add_argument("--currency", default="USD")
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--raw-json", action="store_true")
+    parser.add_argument("--fli-repo", help="Path to a local punitarani/fli checkout")
+    parser.add_argument("--debug", action="store_true", help="Print full fli output on errors")
     args = parser.parse_args()
 
-    repo = find_repo()
+    repo = validate_repo(Path(args.fli_repo)) if args.fli_repo else find_repo()
     base_cmd, env = build_base_command(repo)
     cmd = [
         *base_cmd,
@@ -150,9 +184,17 @@ def main() -> int:
         check=False,
     )
     if proc.returncode != 0:
-        sys.stderr.write(proc.stdout)
+        if args.debug:
+            sys.stderr.write(proc.stdout)
+        else:
+            sys.stderr.write(concise_error(proc.stdout) + "\n")
         return proc.returncode
-    data = extract_json(proc.stdout)
+    try:
+        data = extract_json(proc.stdout)
+    except ValueError as exc:
+        if args.debug:
+            sys.stderr.write(proc.stdout)
+        raise SystemExit(f"{exc} Re-run with --debug to inspect fli output.") from exc
     if args.raw_json:
         print(json.dumps(data, indent=2))
     else:
